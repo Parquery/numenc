@@ -5,22 +5,23 @@ import unittest
 import hypothesis
 import hypothesis.strategies
 
-import numenc_module
+import numenc
 
 MIN_FLOAT32 = -3.402823466385288598117041834851e+38
 MAX_FLOAT32 = 3.402823466385288598117041834851e+38
 
 
 class TestEncodingFloat32(unittest.TestCase):
-    """ Tests encoding and decoding of float 32"""
-
-    @hypothesis.given(hypothesis.strategies.floats(min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32))
+    @hypothesis.given(
+        hypothesis.strategies.floats(
+            min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32))
     def test_encode_decode_automatic(self, value: float):
         hypothesis.assume(value)
-        self.assertEqual(value, numenc_module.to_float32(numenc_module.from_float32(value)))
+        self.assertEqual(value, numenc.to_float32(numenc.from_float32(value)))
 
     def test_encode_order_corner_cases(self):
         # yapf: disable
+        # pylint: disable=line-too-long
         table_smaller = [
             (-0.0, float('inf'), "-0 should be smaller than infinity "),
             (+0.0, float('inf'), "0 should be smaller than infinity "),
@@ -34,34 +35,36 @@ class TestEncodingFloat32(unittest.TestCase):
         ]
 
         table_equals = [
-            (float('inf'), float('inf'), "infinity should be equals to itself"),
-            (float('-inf'), float('-inf'), "negative infinity should be equals to itself"),
-            (+0.0, -0.0, "+0 should be equals to -0"),
-            (0.0, +0.0, "0 should be equals to +0"),
-            (0.0, -0.0, "0 should be equals to -0"),
+            (float('inf'), float('inf'), "infinity should be equal to itself"),
+            (float('-inf'), float('-inf'), "negative infinity should be equal to itself"),
+            (+0.0, -0.0, "+0 should be equal to -0"),
+            (0.0, +0.0, "0 should be equal to +0"),
+            (0.0, -0.0, "0 should be equal to -0"),
         ]
         # yapf: enable
         errs = []
         for test_tuple in table_smaller:
-            first_enc = numenc_module.from_float32(test_tuple[0])
-            second_enc = numenc_module.from_float32(test_tuple[1])
+            first_enc = numenc.from_float32(test_tuple[0])
+            second_enc = numenc.from_float32(test_tuple[1])
             if not first_enc < second_enc:
                 errs.append(test_tuple[2])
 
         for test_tuple in table_equals:
-            first_enc = numenc_module.from_float32(test_tuple[0])
-            second_enc = numenc_module.from_float32(test_tuple[1])
+            first_enc = numenc.from_float32(test_tuple[0])
+            second_enc = numenc.from_float32(test_tuple[1])
             if first_enc != second_enc:
                 errs.append(test_tuple[2])
 
         self.assertEqual([], errs)
 
     @hypothesis.given(
-        value1=hypothesis.strategies.floats(min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32),
-        value2=hypothesis.strategies.floats(min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32))
+        value1=hypothesis.strategies.floats(
+            min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32),
+        value2=hypothesis.strategies.floats(
+            min_value=MIN_FLOAT32, max_value=MAX_FLOAT32, width=32))
     def test_encode_order(self, value1: float, value2: float):
-        encoded1 = numenc_module.from_float32(value1)
-        encoded2 = numenc_module.from_float32(value2)
+        encoded1 = numenc.from_float32(value1)
+        encoded2 = numenc.from_float32(value2)
         if value1 < value2:
             self.assertLess(encoded1, encoded2)
         elif value1 == value2:
@@ -70,7 +73,7 @@ class TestEncodingFloat32(unittest.TestCase):
             self.assertGreater(encoded1, encoded2)
 
     def test_encode_decode(self):
-        #yapf: disable
+        # yapf: disable
         values = [
             float("-inf"),
             MIN_FLOAT32,
@@ -96,13 +99,13 @@ class TestEncodingFloat32(unittest.TestCase):
             b'\xff\x7f\xff\xff',
             b'\xff\x80\x00\x00'
         ]
-        #yapf: enable
+        # yapf: enable
 
         for i, value in enumerate(values):
-            key = numenc_module.from_float32(value)
+            key = numenc.from_float32(value)
             self.assertEqual(expected[i], key)
 
-            decoded = numenc_module.to_float32(key)
+            decoded = numenc.to_float32(key)
             self.assertEqual(value, decoded)
 
         for i, _ in enumerate(expected):
@@ -110,38 +113,58 @@ class TestEncodingFloat32(unittest.TestCase):
                 self.assertLessEqual(expected[i - 1], expected[i])
 
     def test_encode_exceptions(self):
-        tajp_err_triggers = ["some string", ('1', '2'), [], {}, b'\x01\x02']
+        type_err_triggers = ["some string", ('1', '2'), [], {}, b'\x01\x02']
 
-        for weird_val in tajp_err_triggers:
-            tajp_err = False
+        for weird_val in type_err_triggers:
+            type_err = None
             try:
-                _ = numenc_module.from_float32(weird_val)
-            except TypeError:
-                tajp_err = True
+                _ = numenc.from_float32(weird_val)
+            except TypeError as tperr:
+                type_err = tperr
 
-            self.assertTrue(tajp_err, msg="excepted error thrown for input {!r}, but got no error.".format(weird_val))
+            self.assertIsNotNone(
+                type_err,
+                msg="excepted error thrown for input {!r}, "
+                "but got no error.".format(weird_val))
+
+            self.assertEqual("Wrong input: expected 32-bit float.",
+                             str(type_err))
 
     def test_decode_exceptions(self):
-        tajp_err_triggers = ["some string", ('1', '2'), [], {}, 232, -1.23]
-        val_err_triggers = [b'\x01', b'', b'\x01\x02\x02', b'\x01\x02\x01\x02\x01\x02\x01\x02\x02\x02']
+        type_err_triggers = ["some string", ('1', '2'), [], {}, 232, -1.23]
+        val_err_triggers = [
+            b'\x01', b'', b'\x01\x02\x02',
+            b'\x01\x02\x01\x02\x01\x02\x01\x02\x02\x02'
+        ]
 
-        for weird_val in tajp_err_triggers:
-            tajp_err = False
+        for weird_val in type_err_triggers:
+            type_err = None
             try:
-                _ = numenc_module.to_float32(weird_val)
-            except TypeError:
-                tajp_err = True
+                _ = numenc.to_float32(weird_val)
+            except TypeError as tperr:
+                type_err = tperr
 
-            self.assertTrue(tajp_err, msg="excepted error thrown for input {!r}, but got no error.".format(weird_val))
+            self.assertIsNotNone(
+                type_err,
+                msg="excepted error thrown for input {!r}, but got no error.".
+                format(weird_val))
+
+            self.assertEqual("Wrong input: expected bytes.", str(type_err))
 
         for weird_val in val_err_triggers:
-            val_err = False
+            val_err = None
             try:
-                _ = numenc_module.to_float32(weird_val)
-            except ValueError:
-                val_err = True
+                _ = numenc.to_float32(weird_val)
+            except ValueError as verr:
+                val_err = verr
 
-            self.assertTrue(val_err, msg="excepted error thrown for input {!r}, but got no error.".format(weird_val))
+            self.assertIsNotNone(
+                val_err,
+                msg="excepted error thrown for input {!r}, but got no error.".
+                format(weird_val))
+
+            self.assertEqual("Illegal input: expected bytes of length 4, got "
+                             "{}.".format(len(weird_val)), str(val_err))
 
 
 if __name__ == '__main__':

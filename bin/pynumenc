@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Convert an input value to/from bytes/numbers."""
+
+import argparse
+import sys
+
+import numenc
+import pynumenc_meta
+
+
+def main() -> None:
+    """
+    Execute the main routine.
+    """
+    parser = argparse.ArgumentParser(description=pynumenc_meta.__description__)
+    parser.add_argument("conversion_type",
+                        help="The direction and input type of the conversion.\n"
+                             "For instance, to_int16 or from_float64")
+    parser.add_argument(
+        "value",
+        help="The value to be converted. For bytes, in hexadecimal. "
+             "For instance, deadbeef or 1992.")
+
+    supported_types = pynumenc_meta.__supported_types__
+
+    args = parser.parse_args()
+    assert isinstance(args.conversion_type, str)
+    conversion_type = args.conversion_type
+    try:
+        direction, tajp = conversion_type.split('_')
+    except IndexError as err:
+        raise ValueError("Expected the conversion string to satisfy "
+                         "the format to_type or from_type, got "
+                         "{}".format(conversion_type)) from err
+
+    if tajp not in supported_types:
+        raise ValueError("Type {} is not supported. The supported types are:\n "
+                         "{}.".format(tajp, ', '.join(supported_types)))
+
+    if direction == "to":
+        assert isinstance(args.value, str)
+        value = bytes.fromhex(args.value)
+    elif direction == "from":
+        if "int" in tajp:
+            try:
+                value = int(args.value)
+            except:
+                raise ValueError("expected an integer, got "
+                                 "{}".format(args.value))
+        elif "float" in tajp:
+            try:
+                value = float(args.value)
+            except:
+                raise ValueError("expected a float, got "
+                                 "{}".format(args.value))
+        else:
+            raise AssertionError("The type is neither integer nor float, "
+                                 "but {}".format(tajp))
+    else:
+        raise ValueError("Expected the conversion string to satisfy "
+                         "the format to_type or from_type, got "
+                         "{}".format(conversion_type))
+
+    conversion_method = getattr(numenc, conversion_type)
+    result = conversion_method(value)
+    if type(result) == bytes:
+        resultstr = result.hex() + '\n'
+    else:
+        resultstr = str(result) + '\n'
+
+    sys.stdout.write(resultstr)
+    sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()
