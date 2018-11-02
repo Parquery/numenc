@@ -14,8 +14,6 @@ import pynumenc_meta
 
 here = os.path.abspath(os.path.dirname(__file__))  # pylint: disable=invalid-name
 
-NUMENC = Extension('numenc', sources=['numenc-cpp/encoder_decoder.cpp'])
-
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()  # pylint: disable=invalid-name
 
@@ -32,19 +30,28 @@ setup(
         'Intended Audience :: End Users/Desktop',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.6'
     ],
     license='License :: OSI Approved :: MIT License',
-    keywords='C encode decode bytes encoding decoding sorted',
-    packages=find_packages(exclude=['docs', 'tests*']),
+    keywords='C++ encode decode bytes encoding decoding sorted',
+    packages=find_packages(exclude=['docs', 'tests']),
     install_requires=[],
     extras_require={
-        'dev':
-        ['mypy==0.560', 'hypothesis==3.74.3', 'pylint==1.8.2', 'yapf==0.20.2']
+        'dev': [
+            # yapf: disable,
+            'docutils>=0.14,<1',
+            'mypy==0.641',
+            'hypothesis==3.82.1',
+            'pygments>=2.2.0,<3',
+            'pydocstyle>=3.0.0,<4',
+            'pylint==2.1.1',
+            'yapf==0.24.0'
+            # yapf: enable
+        ]
     },
-    ext_modules=[NUMENC],
+    ext_modules=[
+        Extension('numenc', sources=['numenc-cpp/encoder_decoder.cpp'])
+    ],
     py_modules=['pynumenc', 'pynumenc_meta'],
-    package_data={
-        'pynumenc': ['py.typed'],
-        '': ['LICENSE.txt', 'README.rst'],
-    })
+    package_data={'pynumenc': ['py.typed']},
+    data_files=[('.', ['LICENSE.txt', 'README.rst'])])

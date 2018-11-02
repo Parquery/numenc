@@ -4,7 +4,6 @@ import unittest
 
 import hypothesis
 import hypothesis.strategies
-
 import numenc
 
 MIN_SIGNED_INT64 = -9223372036854775808
@@ -72,7 +71,8 @@ class TestEncodingInt64(unittest.TestCase):
     def test_encode_exceptions(self):
         type_err_triggers = [
             "some string", 12.3, ('1', '2'), [], {}, b'\x01\x02',
-            MIN_SIGNED_INT64 - 1, MAX_SIGNED_INT64 + 1
+            MIN_SIGNED_INT64 - 1, MAX_SIGNED_INT64 + 1, MAX_UNSIGNED_INT64,
+            MAX_UNSIGNED_INT64**2
         ]
 
         for weird_val in type_err_triggers:
@@ -179,7 +179,7 @@ class TestEncodingUInt64(unittest.TestCase):
     def test_encode_exceptions(self):
         type_err_triggers = [
             "some string", ('1', '2'), [], {}, b'\x01\x02', -2222222, -1,
-            MAX_UNSIGNED_INT64 + 1
+            MAX_UNSIGNED_INT64 + 1, MAX_UNSIGNED_INT64**2
         ]
 
         for weird_val in type_err_triggers:
@@ -230,8 +230,9 @@ class TestEncodingUInt64(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("Illegal input: expected bytes of length 8, "
-                             "got {}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 8, "
+                "got {}.".format(len(weird_val)), str(val_err))
 
 
 if __name__ == '__main__':

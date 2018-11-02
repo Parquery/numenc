@@ -4,7 +4,6 @@ import unittest
 
 import hypothesis
 import hypothesis.strategies
-
 import numenc
 
 MIN_SIGNED_INT8 = -128
@@ -96,9 +95,9 @@ class TestEncodingInt8(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("expected 8-bit signed integer (range "
-                             "[-128, 127]), got {}.".format(weird_val),
-                             str(val_err))
+            self.assertEqual(
+                "expected 8-bit signed integer (range "
+                "[-128, 127]), got {}.".format(weird_val), str(val_err))
 
     def test_decode_exceptions(self):
         type_err_triggers = ["some string", ('1', '2'), [], {}, 232, -1.23]
@@ -130,8 +129,9 @@ class TestEncodingInt8(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("Illegal input: expected bytes of length 1, got "
-                             "{}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 1, got "
+                "{}.".format(len(weird_val)), str(val_err))
 
 
 class TestEncodingUInt8(unittest.TestCase):
@@ -220,8 +220,9 @@ class TestEncodingUInt8(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("expected 8-bit unsigned integer (range [0, 255]),"
-                             " got {}.".format(weird_val), str(val_err))
+            self.assertEqual(
+                "expected 8-bit unsigned integer (range [0, 255]),"
+                " got {}.".format(weird_val), str(val_err))
 
     def test_decode_exceptions(self):
         type_err_triggers = [
@@ -255,8 +256,9 @@ class TestEncodingUInt8(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("Illegal input: expected bytes of length 1, "
-                             "got {}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 1, "
+                "got {}.".format(len(weird_val)), str(val_err))
 
 
 if __name__ == '__main__':

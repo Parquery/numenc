@@ -2,75 +2,108 @@
 """Convert an input value to/from bytes/numbers."""
 
 import argparse
+import datetime
+import os
 import sys
 
 import numenc
 import pynumenc_meta
 
+SUPPORTED_TYPES = 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', \
+                      'int64', 'uint64', 'float32', 'float64'
 
-def main() -> None:
-    """
-    Execute the main routine.
-    """
+
+def main() -> int:
+    """Execute the main routine."""
+    # pylint: disable=too-many-return-statements
     parser = argparse.ArgumentParser(description=pynumenc_meta.__description__)
-    parser.add_argument("conversion_type",
-                        help="The direction and input type of the conversion.\n"
-                             "For instance, to_int16 or from_float64")
+    parser.add_argument(
+        "conversion",
+        help="The direction and input type of the conversion.\n"
+        "For instance, to_int16 or from_float64")
     parser.add_argument(
         "value",
         help="The value to be converted. For bytes, in hexadecimal. "
-             "For instance, deadbeef or 1992.")
-
-    supported_types = pynumenc_meta.__supported_types__
+        "For instance, deadbeef or 1992.")
 
     args = parser.parse_args()
-    assert isinstance(args.conversion_type, str)
-    conversion_type = args.conversion_type
+    assert isinstance(args.conversion, str)
+    conversion = args.conversion
     try:
-        direction, tajp = conversion_type.split('_')
-    except IndexError as err:
-        raise ValueError("Expected the conversion string to satisfy "
-                         "the format to_type or from_type, got "
-                         "{}".format(conversion_type)) from err
+        direction, tajp = conversion.split('_')
+    except IndexError:
+        err("Expected the conversion string to satisfy the format to_type or "
+            "from_type, got {}".format(conversion))
+        return 1
 
-    if tajp not in supported_types:
-        raise ValueError("Type {} is not supported. The supported types are:\n "
-                         "{}.".format(tajp, ', '.join(supported_types)))
+    if tajp not in SUPPORTED_TYPES:
+        err("Type {} is not supported. The supported types are:\n "
+            "{}.".format(tajp, ', '.join(SUPPORTED_TYPES)))
+        return 1
+
+    if direction not in ["to", "from"]:
+        err("Expected the conversion string to satisfy the format to_type or "
+            "from_type, got {}".format(conversion))
+        return 1
+
+    conversion_method = getattr(numenc, conversion)
 
     if direction == "to":
-        assert isinstance(args.value, str)
-        value = bytes.fromhex(args.value)
-    elif direction == "from":
+        if not isinstance(args.value, str):
+            err("expected string value, got {}".format(type(args.value)))
+            return 1
+        try:
+            value_bts = bytes.fromhex(args.value)
+        except ValueError:
+            err("expected a hexadecimal number, got {}".format(args.value))
+            return 1
+        result_str = str(conversion_method(value_bts)) + '\n'
+
+    else:
         if "int" in tajp:
             try:
-                value = int(args.value)
-            except:
-                raise ValueError("expected an integer, got "
-                                 "{}".format(args.value))
+                value_int = int(args.value)
+            except ValueError:
+                err("expected an integer, got {}".format(args.value))
+                return 1
+            result_str = (conversion_method(value_int)).hex() + '\n'
         elif "float" in tajp:
             try:
-                value = float(args.value)
-            except:
-                raise ValueError("expected a float, got "
-                                 "{}".format(args.value))
+                value_flt = float(args.value)
+            except ValueError:
+                err("expected a float, got {}".format(args.value))
+                return 1
+            result_str = (conversion_method(value_flt)).hex() + '\n'
         else:
-            raise AssertionError("The type is neither integer nor float, "
-                                 "but {}".format(tajp))
-    else:
-        raise ValueError("Expected the conversion string to satisfy "
-                         "the format to_type or from_type, got "
-                         "{}".format(conversion_type))
+            err("The type is neither integer nor float, but {}".format(tajp))
+            return 1
 
-    conversion_method = getattr(numenc, conversion_type)
-    result = conversion_method(value)
-    if type(result) == bytes:
-        resultstr = result.hex() + '\n'
-    else:
-        resultstr = str(result) + '\n'
+    sys.stdout.write(result_str)
+    sys.stdout.flush()
 
-    sys.stdout.write(resultstr)
+    return 0
+
+
+def err(message: str) -> None:
+    """
+    Print a formatted log message to the stderr and flushes it.
+
+    :param message: to be displayed
+
+    """
+    pth = os.path.realpath(__file__)
+    dirname = os.path.basename(os.path.dirname(pth))
+    fname = os.path.basename(pth)
+
+    sys.stdout.write("{red}{dirname}/{fname}: {dt}:{endcolor} {msg}\n".format(
+        red="\033[31m",
+        dirname=dirname,
+        fname=fname,
+        dt=datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%SZ"),
+        msg=message,
+        endcolor="\033[0m"))
     sys.stdout.flush()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

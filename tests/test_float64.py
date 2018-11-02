@@ -4,7 +4,6 @@ import unittest
 
 import hypothesis
 import hypothesis.strategies
-
 import numenc
 
 MIN_FLOAT64 = -1.797693134862315708145274237317e+308
@@ -163,8 +162,9 @@ class TestEncodingFloat64(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("Illegal input: expected bytes of length 8, got "
-                             "{}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 8, got "
+                "{}.".format(len(weird_val)), str(val_err))
 
 
 if __name__ == '__main__':

@@ -352,7 +352,7 @@ static PyObject* from_uint32(PyObject* self, PyObject* args) {
     }
     if (input < 0 || input > 4294967295) {
         return PyErr_Format(PyExc_ValueError,
-            "expected 32-bit unsigned integer (range [0, 4294967295])"
+            "expected 32-bit unsigned integer (range [0, 4294967295]),"
             " got %lld.", input);
     }
 
@@ -913,7 +913,7 @@ static PyMethodDef EncdecMethods[] = {
 static struct PyModuleDef cModPyDem = {
     PyModuleDef_HEAD_INIT,
     "numenc",
-    "Encode and decode numbers to sortable bytes in C++",
+    "Encode and decode numbers to sortable bytes",
     -1,
     EncdecMethods
 };

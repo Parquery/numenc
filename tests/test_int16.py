@@ -4,7 +4,6 @@ import unittest
 
 import hypothesis
 import hypothesis.strategies
-
 import numenc
 
 MIN_SIGNED_INT16 = -32768
@@ -117,8 +116,9 @@ class TestEncodingInt16(unittest.TestCase):
                 val_err,
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
-            self.assertEqual("Illegal input: expected bytes of length 2, "
-                             "got {}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 2, "
+                "got {}.".format(len(weird_val)), str(val_err))
 
 
 class TestEncodingUInt16(unittest.TestCase):
@@ -207,8 +207,9 @@ class TestEncodingUInt16(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("expected 16-bit unsigned integer (range [0, "
-                             "65535]), got {}.".format(weird_val), str(val_err))
+            self.assertEqual(
+                "expected 16-bit unsigned integer (range [0, "
+                "65535]), got {}.".format(weird_val), str(val_err))
 
     def test_decode_exceptions(self):
         type_err_triggers = ["some string", ('1', '2'), [], {}, 232, -1.23]
@@ -240,8 +241,9 @@ class TestEncodingUInt16(unittest.TestCase):
                 msg="excepted error thrown for input {!r}, but got no error.".
                 format(weird_val))
 
-            self.assertEqual("Illegal input: expected bytes of length 2, "
-                             "got {}.".format(len(weird_val)), str(val_err))
+            self.assertEqual(
+                "Illegal input: expected bytes of length 2, "
+                "got {}.".format(len(weird_val)), str(val_err))
 
 
 if __name__ == '__main__':

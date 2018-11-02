@@ -13,18 +13,18 @@ from typing import List, Union, Tuple  # pylint: disable=unused-import
 import yapf.yapflib.yapf_api
 
 
-def check(path: pathlib.Path, py_dir: pathlib.Path,
+def check(path: pathlib.Path, repo_root: pathlib.Path,
           overwrite: bool) -> Union[None, str]:
     """
     Runs all the checks on the given file.
 
     :param path: to the source file
-    :param py_dir: path to the source files
+    :param repo_root: path to the source files
     :param overwrite: if True, overwrites the source file in place instead of
         reporting that it was not well-formatted.
     :return: None if all checks passed. Otherwise, an error message.
     """
-    style_config = py_dir / 'style.yapf'
+    style_config = repo_root / 'style.yapf'
 
     report = []
 
@@ -41,7 +41,8 @@ def check(path: pathlib.Path, py_dir: pathlib.Path,
 
     # mypy
     env = os.environ.copy()
-    env['PYTHONPATH'] = ":".join([py_dir.as_posix(), env.get("PYTHONPATH", "")])
+    env['PYTHONPATH'] = ":".join(
+        [repo_root.as_posix(), env.get("PYTHONPATH", "")])
 
     proc = subprocess.Popen(
         ['mypy', str(path), '--ignore-missing-imports'],
@@ -57,7 +58,7 @@ def check(path: pathlib.Path, py_dir: pathlib.Path,
     # pylint
     proc = subprocess.Popen(
         ['pylint',
-         str(path), '--rcfile={}'.format(py_dir / 'pylint.rc')],
+         str(path), '--rcfile={}'.format(repo_root / 'pylint.rc')],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         universal_newlines=True)
@@ -126,44 +127,55 @@ def main() -> int:
 
     overwrite = bool(args.overwrite)
 
-    py_dir = pathlib.Path(__file__).parent
-
-    # yapf: disable
-    pths = sorted(
-        list(py_dir.glob("*.py")) +
-        list((py_dir / 'tests').glob("*.py")))
-    # yapf: enable
+    repo_root = pathlib.Path(__file__).parent
 
     print("Building the C++ module...")
-    success = build_and_install_module(py_dir)
+    success = build_and_install_module(repo_root)
     if not success:
         return 1
+
+    print("Successfully built the C++ module.")
+
+    # yapf: disable
+    print("YAPF'ing...")
+    if overwrite:
+        subprocess.check_call([
+            "yapf", "--in-place", "--style=style.yapf", "--recursive", "tests",
+            "numenc", "setup.py", "precommit.py", "bin/pynumenc"
+        ], cwd=repo_root.as_posix())
     else:
-        print("Succesfully built the C++ module.")
+        subprocess.check_call([
+            "yapf", "--diff", "--style=style.yapf", "--recursive", "tests",
+            "numenc", "setup.py", "precommit.py", "bin/pynumenc"
+        ], cwd=repo_root.as_posix())
 
-    print("There are {} file(s) that need to be individually "
-          "checked...".format(len(pths)))
+    print("Mypy'ing...")
+    subprocess.check_call(["mypy", "tests", "bin/pynumenc"],
+                          cwd=repo_root.as_posix())
 
-    futures_paths = [
-    ]  # type: List[Tuple[concurrent.futures.Future, pathlib.Path]]
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for pth in pths:
-            future = executor.submit(
-                fn=check, path=pth, py_dir=py_dir, overwrite=overwrite)
-            futures_paths.append((future, pth))
+    print("Isort'ing...")
+    if overwrite:
+        subprocess.check_call([
+            "isort", "--recursive", "tests",
+            "bin/pynumenc"], cwd=repo_root.as_posix())
+    else:
+        subprocess.check_call([
+            "isort", "--check-only", "--recursive", "tests",
+            "bin/pynumenc"], cwd=repo_root.as_posix())
 
-        for future, pth in futures_paths:
-            report = future.result()
-            if report is None:
-                print("Passed all checks: {}".format(pth))
-            else:
-                print(
-                    "One or more checks failed for {}:\n{}".format(pth, report))
-                success = False
+    print("Pylint'ing...")
+    subprocess.check_call(
+        ["pylint", "--rcfile=pylint.rc", "tests", "bin/pynumenc"],
+        cwd=repo_root.as_posix())
+
+    print("Pydocstyle'ing...")
+    subprocess.check_call(["pydocstyle", "bin/pynumenc"],
+                          cwd=repo_root.as_posix())
+    # yapf: enable
 
     print("Doctesting...")
     subprocess.check_call(
-        ["python3", "-m", "doctest", (py_dir / "README.rst").as_posix()])
+        ["python3", "-m", "doctest", (repo_root / "README.rst").as_posix()])
 
     print("Running unit tests...")
     source_dir = pathlib.Path(__file__).resolve().parent
@@ -171,6 +183,10 @@ def main() -> int:
         ['python3', '-m', 'unittest', 'discover',
          str(source_dir / 'tests')])
     success = success and retcode == 0
+
+    print("Checking the restructured text of the readme...")
+    subprocess.check_call(
+        ['python3', 'setup.py', 'check', '--restructuredtext', '--strict'])
 
     if not success:
         print("One or more checks failed.")
