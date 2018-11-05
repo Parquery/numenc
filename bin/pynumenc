@@ -2,8 +2,6 @@
 """Convert an input value to/from bytes/numbers."""
 
 import argparse
-import datetime
-import os
 import sys
 
 import numenc
@@ -32,30 +30,40 @@ def main() -> int:
     try:
         direction, tajp = conversion.split('_')
     except IndexError:
-        err("Expected the conversion string to satisfy the format to_type or "
-            "from_type, got {}".format(conversion))
+        print(
+            "Expected the conversion string to satisfy the format to_type "
+            "or from_type, got {}".format(conversion),
+            file=sys.stderr)
         return 1
 
     if tajp not in SUPPORTED_TYPES:
-        err("Type {} is not supported. The supported types are:\n "
-            "{}.".format(tajp, ', '.join(SUPPORTED_TYPES)))
+        print(
+            "Type {} is not supported. The supported types are:\n "
+            "{}.".format(tajp, ', '.join(SUPPORTED_TYPES)),
+            file=sys.stderr)
         return 1
 
     if direction not in ["to", "from"]:
-        err("Expected the conversion string to satisfy the format to_type or "
-            "from_type, got {}".format(conversion))
+        print(
+            "Expected the conversion string to satisfy the format to_type "
+            "or from_type, got {}".format(conversion),
+            file=sys.stderr)
         return 1
 
     conversion_method = getattr(numenc, conversion)
 
     if direction == "to":
         if not isinstance(args.value, str):
-            err("expected string value, got {}".format(type(args.value)))
+            print(
+                "expected string value, got {}".format(type(args.value)),
+                file=sys.stderr)
             return 1
         try:
             value_bts = bytes.fromhex(args.value)
         except ValueError:
-            err("expected a hexadecimal number, got {}".format(args.value))
+            print(
+                "expected a hexadecimal number, got {}".format(args.value),
+                file=sys.stderr)
             return 1
         result_str = str(conversion_method(value_bts)) + '\n'
 
@@ -64,45 +72,30 @@ def main() -> int:
             try:
                 value_int = int(args.value)
             except ValueError:
-                err("expected an integer, got {}".format(args.value))
+                print(
+                    "expected an integer, got {}".format(args.value),
+                    file=sys.stderr)
                 return 1
             result_str = (conversion_method(value_int)).hex() + '\n'
         elif "float" in tajp:
             try:
                 value_flt = float(args.value)
             except ValueError:
-                err("expected a float, got {}".format(args.value))
+                print(
+                    "expected a float, got {}".format(args.value),
+                    file=sys.stderr)
                 return 1
             result_str = (conversion_method(value_flt)).hex() + '\n'
         else:
-            err("The type is neither integer nor float, but {}".format(tajp))
+            print(
+                "The type is neither integer nor float, but {}".format(tajp),
+                file=sys.stderr)
             return 1
 
     sys.stdout.write(result_str)
     sys.stdout.flush()
 
     return 0
-
-
-def err(message: str) -> None:
-    """
-    Print a formatted log message to the stderr and flushes it.
-
-    :param message: to be displayed
-
-    """
-    pth = os.path.realpath(__file__)
-    dirname = os.path.basename(os.path.dirname(pth))
-    fname = os.path.basename(pth)
-
-    sys.stdout.write("{red}{dirname}/{fname}: {dt}:{endcolor} {msg}\n".format(
-        red="\033[31m",
-        dirname=dirname,
-        fname=fname,
-        dt=datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%SZ"),
-        msg=message,
-        endcolor="\033[0m"))
-    sys.stdout.flush()
 
 
 if __name__ == "__main__":

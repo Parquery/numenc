@@ -176,6 +176,10 @@ def main() -> int:
     print("Doctesting...")
     subprocess.check_call(
         ["python3", "-m", "doctest", (repo_root / "README.rst").as_posix()])
+    for pth in (repo_root / "bin").glob("**/*.py"):
+        subprocess.check_call(["python3", "-m", "doctest", pth.as_posix()])
+    for pth in (repo_root / "tests").glob("**/*.py"):
+        subprocess.check_call(["python3", "-m", "doctest", pth.as_posix()])
 
     print("Running unit tests...")
     source_dir = pathlib.Path(__file__).resolve().parent
