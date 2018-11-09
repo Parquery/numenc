@@ -2,7 +2,7 @@
 
 __title__ = 'numenc'
 __description__ = 'Convert numbers to/from sortable bytes'
-__url__ = 'https://github.com/Parquery/pynumenc'
+__url__ = 'https://github.com/Parquery/numenc-py'
 __version__ = '1.0.0'
 __author__ = 'Teodoro Filippini and Marko Ristin'
 __author_email__ = 'teodoro.filippini@gmail.com, marko.ristin@gmail.com'
